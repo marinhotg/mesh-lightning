@@ -22,14 +22,22 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.thelaw0606.meshlightning"
+      "package": "com.thelaw0606.meshlightning",
+      "permissions": [
+        "BLUETOOTH",
+        "BLUETOOTH_ADMIN",
+        "BLUETOOTH_CONNECT",
+        "BLUETOOTH_SCAN",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "extra": {
       "eas": {
-        "projectId": "8c934db6-c270-4bb6-9913-1c42f41259ea"
+        "projectId": "6b01265e-a3d9-4871-9621-4ce4a174e810"
       }
     }
   }
