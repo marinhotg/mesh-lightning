@@ -42,8 +42,9 @@
     "plugins": ["expo-font"],
     "extra": {
       "eas": {
-        "projectId": "8c934db6-c270-4bb6-9913-1c42f41259ea"
+        "projectId": "6b01265e-a3d9-4871-9621-4ce4a174e810"
       }
-    }
+    },
+    "owner": "marinhotg"
   }
 }

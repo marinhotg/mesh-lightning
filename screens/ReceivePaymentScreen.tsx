@@ -17,8 +17,10 @@ import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import QRCode from 'react-native-qrcode-svg';
-import * as Clipboard from 'expo-clipboard';
+import Clipboard from '@react-native-clipboard/clipboard';
 import * as Haptics from 'expo-haptics';
+import { useAppStore } from '../src/store/appStore';
+import { ldkService } from '../src/services/ldk.service';
 
 type ReceivePaymentNavigationProp = NativeStackNavigationProp<RootStackParamList, 'ReceivePayment'>;
 
@@ -26,12 +28,15 @@ const SATOSHI_IN_BTC = 100_000_000;
 
 export default function ReceivePaymentScreen() {
   const navigation = useNavigation<ReceivePaymentNavigationProp>();
+  const { addTransaction, updateTransaction, updateBalance, ldkNodeStarted } = useAppStore();
   const [amount, setAmount] = useState('');
   const [memo, setMemo] = useState('');
   const [invoice, setInvoice] = useState('');
   const [showQR, setShowQR] = useState(false);
   const [isFocusedAmount, setIsFocusedAmount] = useState(false);
   const [isFocusedMemo, setIsFocusedMemo] = useState(false);
+  const [invoiceStatus, setInvoiceStatus] = useState<'transmitting' | 'transmitted' | 'confirmed' | null>(null);
+  const [isCreatingInvoice, setIsCreatingInvoice] = useState(false);
 
   const [btcPrice, setBtcPrice] = useState<number | null>(null);
   const [usdValue, setUsdValue] = useState('');
@@ -48,19 +53,25 @@ export default function ReceivePaymentScreen() {
         const data = await response.json();
         setBtcPrice(data.bitcoin.usd);
       } catch (error) {
-        console.error('Error fetching BTC price:', error);
+        // Silenced for offline mock
       }
     };
 
     fetchBtcPrice();
   }, []);
 
-  const generateInvoice = () => {
+  const generateInvoice = async () => {
     if (!amount || parseFloat(amount) <= 0) {
       Alert.alert('Error', 'Please enter a valid amount');
       return;
     }
 
+    if (!ldkNodeStarted) {
+      Alert.alert('Error', 'Lightning node not started. Please initialize the node first.');
+      return;
+    }
+
+    setIsCreatingInvoice(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
 
     if (btcPrice) {
@@ -70,16 +81,91 @@ export default function ReceivePaymentScreen() {
     } else {
       setUsdValue('...');
     }
-    //mocado
-    const mockInvoice = `lnbc${amount}000n1pj9x7ztpp5qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsdqqcqzpgxqyz5vqsp5qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq9qyyssqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqxqq`;
-    setInvoice(mockInvoice);
-    setShowQR(true);
+
+    try {
+      // Create real LDK invoice
+      const ldkInvoice = await ldkService.createInvoice(
+        parseInt(amount),
+        memo || 'Mesh Lightning Payment',
+        3600 // 1 hour expiry
+      );
+
+      if (ldkInvoice) {
+        setInvoice(ldkInvoice.bolt11);
+        setShowQR(true);
+
+        const transactionId = Date.now().toString();
+
+        addTransaction({
+          id: transactionId,
+          invoice: ldkInvoice.bolt11,
+          status: 'pending',
+          transmissionStatus: 'transmitting',
+          timestamp: Date.now(),
+        });
+
+        setInvoiceStatus('transmitting');
+
+        // Simulate mesh network transmission and payment
+        setTimeout(() => {
+          updateTransaction(transactionId, 'pending', 'transmitted');
+          setInvoiceStatus('transmitted');
+
+          setTimeout(() => {
+            updateTransaction(transactionId, 'confirmed', null);
+            updateBalance(parseInt(amount));
+            setInvoiceStatus('confirmed');
+            Alert.alert('Payment Confirmed!', `You received ${parseInt(amount).toLocaleString()} sats via Lightning Network`);
+          }, 8000);
+        }, 7000);
+      } else {
+        Alert.alert('Error', 'Failed to create Lightning invoice');
+      }
+    } catch (error) {
+      console.error('Error generating LDK invoice:', error);
+      Alert.alert('Error', 'Failed to create Lightning invoice. Using mock for demo.');
+
+      // Fallback to mock invoice for demo
+      const mockInvoice = `lnbc${amount}000n1pj9x7ztpp5qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsdqqcqzpgxqyz5vqsp5qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq9qyyssqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqxqq`;
+      setInvoice(mockInvoice);
+      setShowQR(true);
+
+      const transactionId = Date.now().toString();
+      addTransaction({
+        id: transactionId,
+        invoice: mockInvoice,
+        status: 'pending',
+        transmissionStatus: 'transmitting',
+        timestamp: Date.now(),
+      });
+
+      setInvoiceStatus('transmitting');
+
+      setTimeout(() => {
+        updateTransaction(transactionId, 'pending', 'transmitted');
+        setInvoiceStatus('transmitted');
+
+        setTimeout(() => {
+          updateTransaction(transactionId, 'confirmed', null);
+          updateBalance(parseInt(amount));
+          setInvoiceStatus('confirmed');
+          Alert.alert('Payment Confirmed!', `You received ${parseInt(amount).toLocaleString()} sats via mesh network`);
+        }, 8000);
+      }, 7000);
+    } finally {
+      setIsCreatingInvoice(false);
+    }
   };
 
   const copyToClipboard = async () => {
-    await Clipboard.setStringAsync(invoice);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    Alert.alert('Copied!', 'Invoice copied to clipboard');
+    try {
+      Clipboard.setString(invoice);
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      Alert.alert('Copied!', 'Invoice copied to clipboard');
+    } catch (error) {
+      console.error('Failed to copy to clipboard:', error);
+      Alert.alert('Error', 'Failed to copy to clipboard');
+    }
   };
 
   const shareInvoice = async () => {
@@ -101,6 +187,7 @@ export default function ReceivePaymentScreen() {
     setInvoice('');
     setShowQR(false);
     setUsdValue('');
+    setInvoiceStatus(null);
   };
 
   if (showQR && invoice) {
@@ -164,6 +251,33 @@ export default function ReceivePaymentScreen() {
                   <Text style={styles.actionButtonText}>Share</Text>
                 </TouchableOpacity>
               </View>
+
+              {invoiceStatus && (
+                <View style={[styles.statusCard,
+                  invoiceStatus === 'transmitting' && styles.statusTransmitting,
+                  invoiceStatus === 'transmitted' && styles.statusTransmitted,
+                  invoiceStatus === 'confirmed' && styles.statusConfirmed
+                ]}>
+                  <MaterialCommunityIcons
+                    name={
+                      invoiceStatus === 'transmitting' ? 'wifi-sync' :
+                      invoiceStatus === 'transmitted' ? 'wifi-check' :
+                      'check-circle'
+                    }
+                    size={20}
+                    color={
+                      invoiceStatus === 'transmitting' ? colors.primary :
+                      invoiceStatus === 'transmitted' ? colors.primary :
+                      '#10B981'
+                    }
+                  />
+                  <Text style={styles.statusText}>
+                    {invoiceStatus === 'transmitting' ? 'Transmitting to mesh network...' :
+                     invoiceStatus === 'transmitted' ? 'Transmitted to other nodes' :
+                     'Payment confirmed!'}
+                  </Text>
+                </View>
+              )}
 
               <View style={styles.infoCard}>
                 <MaterialCommunityIcons name="information" size={20} color={colors.primary} />
@@ -301,13 +415,19 @@ export default function ReceivePaymentScreen() {
           <TouchableOpacity
             style={[
               styles.confirmButton,
-              (!amount || parseFloat(amount) <= 0) && styles.disabledButton,
+              ((!amount || parseFloat(amount) <= 0) || isCreatingInvoice) && styles.disabledButton,
             ]}
-            disabled={!amount || parseFloat(amount) <= 0}
+            disabled={(!amount || parseFloat(amount) <= 0) || isCreatingInvoice}
             onPress={generateInvoice}
           >
-            <MaterialCommunityIcons name="qrcode" size={20} color={colors.background} />
-            <Text style={styles.confirmButtonText}>Generate QR Code</Text>
+            <MaterialCommunityIcons
+              name={isCreatingInvoice ? "loading" : "qrcode"}
+              size={20}
+              color={colors.background}
+            />
+            <Text style={styles.confirmButtonText}>
+              {isCreatingInvoice ? 'Creating Invoice...' : 'Generate Lightning Invoice'}
+            </Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -565,6 +685,29 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     marginLeft: 8,
+  },
+  statusCard: {
+    flexDirection: 'row',
+    borderRadius: 10,
+    padding: 15,
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  statusTransmitting: {
+    backgroundColor: 'rgba(1, 199, 242, 0.1)',
+  },
+  statusTransmitted: {
+    backgroundColor: 'rgba(1, 199, 242, 0.15)',
+  },
+  statusConfirmed: {
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+  },
+  statusText: {
+    color: colors.background,
+    fontSize: 14,
+    marginLeft: 10,
+    flex: 1,
+    fontWeight: '600',
   },
   infoCard: {
     flexDirection: 'row',

@@ -14,6 +14,12 @@ import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
+import { meshService } from '../src/services/mesh.service';
+import { useAppStore } from '../src/store/appStore';
+import { ldkService } from '../src/services/ldk.service';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
+import { Alert } from 'react-native';
 
 type SendPaymentNavigationProp = NativeStackNavigationProp<RootStackParamList, 'SendPayment'>;
 
@@ -21,8 +27,75 @@ export default function SendPaymentScreen() {
   const navigation = useNavigation<SendPaymentNavigationProp>();
   const [invoice, setInvoice] = useState('');
   const [isFocused, setIsFocused] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const { addTransaction, ldkNodeStarted, updateBalance } = useAppStore();
 
   const decodedInvoice = invoice.length > 10 ? { amount: 1200, memo: 'Test payment' } : null;
+
+  const handleSendPayment = async () => {
+    if (!invoice.trim()) {
+      Alert.alert('Error', 'Please enter a Lightning invoice');
+      return;
+    }
+
+    if (!ldkNodeStarted) {
+      Alert.alert('Error', 'Lightning node not started. Please initialize the node first.');
+      return;
+    }
+
+    setIsSending(true);
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+
+    try {
+      const transactionId = `tx_${Date.now()}`;
+
+      // Try to send payment with LDK
+      const success = await ldkService.sendPayment(invoice.trim());
+
+      if (success) {
+        addTransaction({
+          id: transactionId,
+          invoice: invoice.trim(),
+          status: 'confirmed',
+          timestamp: Date.now(),
+        });
+
+        // Simulate deducting amount from balance (in a real app, this would be handled by LDK)
+        const estimatedAmount = decodedInvoice?.amount || 1000;
+        updateBalance(-estimatedAmount);
+
+        Alert.alert(
+          'Payment Sent!',
+          `Lightning payment sent successfully`,
+          [{ text: 'OK', onPress: () => navigation.goBack() }]
+        );
+      } else {
+        Alert.alert('Payment Failed', 'Could not send Lightning payment. Trying via mesh network...');
+
+        // Fallback to mesh network
+        const messageId = await meshService.sendPaymentRequest(
+          invoice.trim(),
+          decodedInvoice?.amount || 1000,
+          decodedInvoice?.memo || 'Mesh payment'
+        );
+
+        addTransaction({
+          id: transactionId,
+          invoice: invoice.trim(),
+          status: 'pending',
+          timestamp: Date.now(),
+          messageId,
+        });
+
+        navigation.navigate('SendingStatus', { transactionId });
+      }
+    } catch (error: any) {
+      console.error('Failed to send payment:', error);
+      Alert.alert('Error', 'Failed to send payment. Please try again.');
+    } finally {
+      setIsSending(false);
+    }
+  };
 
   return (
     <ImageBackground
@@ -86,11 +159,19 @@ export default function SendPaymentScreen() {
 
         <View style={styles.confirmButtonContainer}>
           <TouchableOpacity
-            style={[styles.confirmButton, !decodedInvoice && styles.disabledButton]}
-            disabled={!decodedInvoice}
-            onPress={() => navigation.navigate('SendingStatus')}
+            style={[styles.confirmButton, (!invoice.trim() || isSending) && styles.disabledButton]}
+            disabled={!invoice.trim() || isSending}
+            onPress={handleSendPayment}
           >
-            <Text style={styles.confirmButtonText}>Confirm and Send via MESH</Text>
+            <MaterialCommunityIcons
+              name={isSending ? "loading" : "lightning-bolt"}
+              size={20}
+              color="white"
+              style={{ marginRight: 8 }}
+            />
+            <Text style={styles.confirmButtonText}>
+              {isSending ? 'Sending Payment...' : 'Send Lightning Payment'}
+            </Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -203,6 +284,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     justifyContent: 'center',
+    flexDirection: 'row',
     marginBottom: 60,
   },
   disabledButton: {

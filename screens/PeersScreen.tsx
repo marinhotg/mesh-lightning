@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,7 @@ import { RootStackParamList } from '../navigation/AppNavigator';
 import { colors } from '../constants/Colors';
 import { useAppStore } from '../src/store/appStore';
 import { bluetoothService, BluetoothPeer } from '../src/services/bluetooth.service';
+import { meshService } from '../src/services/mesh.service';
 
 type PeersScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Peers'>;
 
@@ -23,65 +24,119 @@ export default function PeersScreen() {
   const navigation = useNavigation<PeersScreenNavigationProp>();
   const { peers, addPeer, clearPeers } = useAppStore();
   const [isScanning, setIsScanning] = useState(false);
+  const scanTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isMountedRef = useRef(true);
+  const isScanningRef = useRef(false);
 
-  useEffect(() => {
-    startScanning();
-
-    const unsubscribe = bluetoothService.onPeerDiscovered((peer: BluetoothPeer) => {
-      addPeer(peer);
-    });
-
-    const scanCheckInterval = setInterval(() => {
-      const actuallyScanning = bluetoothService.isScanning();
-      if (isScanning !== actuallyScanning) {
-        setIsScanning(actuallyScanning);
-      }
-    }, 1000);
-
-    return () => {
-      stopScanning();
-      unsubscribe();
-      clearInterval(scanCheckInterval);
-    };
+  const updateScanningState = useCallback((value: boolean) => {
+    if (!isMountedRef.current) return;
+    isScanningRef.current = value;
+    setIsScanning(value);
   }, []);
 
-  const startScanning = async () => {
-    try {
-      setIsScanning(true);
-      clearPeers();
-      await bluetoothService.startScanning();
-    } catch (error: any) {
-      console.error('Error starting scan:', error);
-      setIsScanning(false);
-
-      let errorMessage = 'Could not start device scanning.';
-
-      if (error.message?.includes('not enabled')) {
-        errorMessage = 'Bluetooth is disabled. Enable Bluetooth in device settings.';
-      } else if (error.message?.includes('permissions')) {
-        errorMessage = 'Bluetooth permissions required. Grant the requested permissions.';
-      } else if (error.message?.includes('not initialized')) {
-        errorMessage = 'Bluetooth initialization error. Try restarting the app.';
-      }
-
-      Alert.alert('Bluetooth Error', errorMessage, [{ text: 'OK' }]);
+  const stopScanning = useCallback(async () => {
+    if (scanTimeoutRef.current) {
+      clearTimeout(scanTimeoutRef.current);
+      scanTimeoutRef.current = null;
     }
-  };
-
-  const stopScanning = async () => {
     try {
       await bluetoothService.stopScanning();
-      setIsScanning(false);
     } catch (error) {
       console.error('Error stopping scan:', error);
+    } finally {
+      updateScanningState(false);
     }
-  };
+  }, [updateScanningState]);
+
+  const startScanning = useCallback(
+    async (shouldClearPeers: boolean = true) => {
+      if (!isMountedRef.current || isScanningRef.current) {
+        return;
+      }
+
+      try {
+        updateScanningState(true);
+        if (shouldClearPeers) {
+          clearPeers();
+        }
+
+        if (scanTimeoutRef.current) {
+          clearTimeout(scanTimeoutRef.current);
+        }
+
+        await bluetoothService.startScanning();
+
+        scanTimeoutRef.current = setTimeout(() => {
+          if (!isMountedRef.current) return;
+          updateScanningState(false);
+        }, 30000);
+      } catch (error: any) {
+        console.error('Error starting scan:', error);
+        updateScanningState(false);
+
+        let errorMessage = 'Could not start device scanning.';
+
+        if (error.message?.includes('not enabled')) {
+          errorMessage = 'Bluetooth is disabled. Enable Bluetooth in device settings.';
+        } else if (error.message?.includes('permissions')) {
+          errorMessage = 'Bluetooth permissions required. Grant the requested permissions.';
+        } else if (error.message?.includes('not initialized')) {
+          errorMessage = 'Bluetooth initialization error. Try restarting the app.';
+        }
+
+        Alert.alert('Bluetooth Error', errorMessage, [{ text: 'OK' }]);
+      }
+    },
+    [clearPeers, updateScanningState]
+  );
+
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    startScanning(true).catch((error) => {
+      console.error('Failed to start scanning:', error);
+    });
+
+    const unsubscribe = bluetoothService.onPeerDiscovered(async (peer: BluetoothPeer) => {
+      if (!isMountedRef.current) return;
+
+      try {
+        addPeer(peer);
+
+        const device = bluetoothService.getDiscoveredDevice(peer.id);
+        if (device) {
+          try {
+            const connected = await bluetoothService.connectToDevice(device);
+            if (connected && isMountedRef.current) {
+              meshService.addConnectedPeer(peer.id, device);
+            }
+          } catch (error) {
+            console.error('Failed to auto-connect to peer:', error);
+          }
+        }
+      } catch (error) {
+        console.error('Error handling peer discovery:', error);
+      }
+    });
+
+    return () => {
+      isMountedRef.current = false;
+      if (scanTimeoutRef.current) {
+        clearTimeout(scanTimeoutRef.current);
+        scanTimeoutRef.current = null;
+      }
+      stopScanning().catch(console.error);
+      unsubscribe();
+    };
+  }, [addPeer, startScanning, stopScanning]);
 
   const refreshScan = async () => {
     await stopScanning();
     setTimeout(() => {
-      startScanning();
-    }, 1000);
+      if (isMountedRef.current) {
+        startScanning(true);
+      }
+    }, 600);
   };
 
   const renderPeerItem = ({ item }: { item: BluetoothPeer }) => {
