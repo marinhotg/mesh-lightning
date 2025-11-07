@@ -17,8 +17,7 @@ export default function SendingStatusModal() {
       <Text style={styles.title}>Sending Payment...</Text>
 
       <Text style={styles.subtitle}>
-        Your transaction is being securely sent over the mesh network. This may take a few
-        moments.
+        Your transaction is being securely sent over the mesh network. This may take a few moments.
       </Text>
 
       <TouchableOpacity style={styles.closeButton} onPress={() => navigation.navigate('Home')}>

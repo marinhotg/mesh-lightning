@@ -13,7 +13,11 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSBluetoothAlwaysUsageDescription": "Este app usa Bluetooth para descobrir e conectar-se a dispositivos próximos para formar uma rede mesh.",
+        "NSBluetoothPeripheralUsageDescription": "Este app usa Bluetooth para descobrir e conectar-se a dispositivos próximos para formar uma rede mesh."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -35,9 +39,7 @@
     "web": {
       "favicon": "./assets/icon.png"
     },
-    "plugins": [
-      "expo-font"
-    ],
+    "plugins": ["expo-font"],
     "extra": {
       "eas": {
         "projectId": "8c934db6-c270-4bb6-9913-1c42f41259ea"

@@ -1,5 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, ImageBackground, Animated } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  ImageBackground,
+  Animated,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../constants/Colors';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
@@ -25,10 +33,10 @@ export default function HomeScreen() {
   const { isInternetConnected } = useNetworkState();
   const { isBluetoothConnected, toggleBluetooth } = useBluetoothState();
   const [displayStatus, setDisplayStatus] = useState<DisplayStatus>('bluetoothDisconnected');
-  
-  const [satsBalance, setSatsBalance] = useState(18000); 
+
+  const [satsBalance, setSatsBalance] = useState(18000);
   const [btcPrice, setBtcPrice] = useState<number | null>(null);
-  const [usdBalance, setUsdBalance] = useState<string>("..."); 
+  const [usdBalance, setUsdBalance] = useState<string>('...');
 
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
@@ -52,21 +60,21 @@ export default function HomeScreen() {
         const data = await response.json();
         setBtcPrice(data.bitcoin.usd);
       } catch (error) {
-        console.error("Error fetching BTC price:", error);
-        setUsdBalance("Error"); 
+        console.error('Error fetching BTC price:', error);
+        setUsdBalance('Error');
       }
     };
 
     fetchBtcPrice();
-  }, []); 
+  }, []);
 
   useEffect(() => {
     if (btcPrice !== null) {
       const btcValue = satsBalance / SATOSHI_IN_BTC;
       const calculatedUsd = btcValue * btcPrice;
-      setUsdBalance(calculatedUsd.toFixed(2)); 
+      setUsdBalance(calculatedUsd.toFixed(2));
     }
-  }, [btcPrice, satsBalance]); 
+  }, [btcPrice, satsBalance]);
 
   useEffect(() => {
     if (isInternetConnected && isBluetoothConnected) {
@@ -98,13 +106,10 @@ export default function HomeScreen() {
     switch (displayStatus) {
       case 'bluetoothDisconnected':
         return (
-          <Animated.View 
-            style={[
-              styles.statusCard, 
-              { backgroundColor: "#b86e14", opacity: fadeAnim }
-            ]}
+          <Animated.View
+            style={[styles.statusCard, { backgroundColor: '#b86e14', opacity: fadeAnim }]}
           >
-            <MaterialCommunityIcons name="bluetooth-off" size={24} color={"#ffff"} />
+            <MaterialCommunityIcons name="bluetooth-off" size={24} color={'#ffff'} />
             <View style={styles.statusTextContainer}>
               <Text style={styles.statusTitle}>STATUS: Bluetooth Disconnected</Text>
               <Text style={styles.statusSubtitle}>Connect to start the mesh network</Text>
@@ -113,11 +118,8 @@ export default function HomeScreen() {
         );
       case 'internetDisconnected':
         return (
-          <Animated.View 
-            style={[
-              styles.statusCard, 
-              { backgroundColor: colors.accent, opacity: fadeAnim }
-            ]}
+          <Animated.View
+            style={[styles.statusCard, { backgroundColor: colors.accent, opacity: fadeAnim }]}
           >
             <MaterialCommunityIcons name="bluetooth" size={24} color={colors.primary} />
             <View style={styles.statusTextContainer}>
@@ -128,11 +130,8 @@ export default function HomeScreen() {
         );
       case 'internetConnected':
         return (
-          <Animated.View 
-            style={[
-              styles.statusCard, 
-              { backgroundColor: colors.success, opacity: fadeAnim }
-            ]}
+          <Animated.View
+            style={[styles.statusCard, { backgroundColor: colors.success, opacity: fadeAnim }]}
           >
             <Feather name="globe" size={24} color={colors.background} />
             <View style={styles.statusTextContainer}>
@@ -143,13 +142,13 @@ export default function HomeScreen() {
         );
       case 'bothConnected':
         return (
-          <Animated.View 
+          <Animated.View
             style={[
-              styles.statusCard, 
-              { 
+              styles.statusCard,
+              {
                 backgroundColor: colors.success,
                 opacity: fadeAnim,
-              }
+              },
             ]}
           >
             <View style={styles.statusIconsContainer}>
@@ -158,9 +157,7 @@ export default function HomeScreen() {
             </View>
             <View style={styles.statusTextContainer}>
               <Text style={styles.statusTitle}>STATUS: Fully Connected</Text>
-              <Text style={styles.statusSubtitle}>
-                Mesh + Internet • Routing transactions
-              </Text>
+              <Text style={styles.statusSubtitle}>Mesh + Internet • Routing transactions</Text>
             </View>
           </Animated.View>
         );
@@ -170,8 +167,8 @@ export default function HomeScreen() {
   const renderActionButtons = () => {
     if (displayStatus === 'bluetoothDisconnected') {
       return (
-        <TouchableOpacity 
-          style={styles.singleActionButton} 
+        <TouchableOpacity
+          style={styles.singleActionButton}
           onPress={() => {
             Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
             toggleBluetooth();
@@ -186,8 +183,8 @@ export default function HomeScreen() {
 
     return (
       <Animated.View style={[styles.doubleButtonContainer, { opacity: fadeAnim }]}>
-        <TouchableOpacity 
-          style={[styles.actionButton, styles.receiveButton]} 
+        <TouchableOpacity
+          style={[styles.actionButton, styles.receiveButton]}
           onPress={handleReceivePress}
           activeOpacity={0.8}
         >
@@ -195,8 +192,8 @@ export default function HomeScreen() {
           <Text style={[styles.actionButtonText, { color: colors.primary }]}>RECEIVE</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={[styles.actionButton, styles.sendButton]} 
+        <TouchableOpacity
+          style={[styles.actionButton, styles.sendButton]}
           onPress={handleSendPress}
           activeOpacity={0.8}
         >
@@ -216,11 +213,18 @@ export default function HomeScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.container}>
           <View style={styles.header}>
+            <TouchableOpacity
+              style={styles.peersButton}
+              onPress={() => navigation.navigate('Peers')}
+            >
+              <MaterialCommunityIcons name="bluetooth" size={24} color={colors.primary} />
+            </TouchableOpacity>
             <Image
               source={require('../assets/MeshLightning.png')}
               style={styles.logoImage}
               resizeMode="contain"
             />
+            <View style={styles.placeholder} />
           </View>
 
           <View style={styles.mainContent}>
@@ -290,9 +294,21 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+    marginTop: 28,
+  },
+  peersButton: {
+    width: 44,
+    height: 44,
     justifyContent: 'center',
-    marginBottom: 0,
-    marginTop: 15,
+    alignItems: 'center',
+    backgroundColor: colors.accent,
+    borderRadius: 22,
+  },
+  placeholder: {
+    width: 44,
+    height: 44,
   },
   logoImage: {
     width: '100%',

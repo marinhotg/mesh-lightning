@@ -86,9 +86,7 @@ export default function AnimatedButton({
         ]}
       >
         {icon}
-        <Text style={[styles.buttonText, disabled && styles.disabledText, textStyle]}>
-          {title}
-        </Text>
+        <Text style={[styles.buttonText, disabled && styles.disabledText, textStyle]}>{title}</Text>
       </Animated.View>
     </TouchableOpacity>
   );

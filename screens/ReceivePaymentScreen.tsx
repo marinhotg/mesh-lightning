@@ -34,7 +34,7 @@ export default function ReceivePaymentScreen() {
   const [isFocusedMemo, setIsFocusedMemo] = useState(false);
 
   const [btcPrice, setBtcPrice] = useState<number | null>(null);
-  const [usdValue, setUsdValue] = useState(''); 
+  const [usdValue, setUsdValue] = useState('');
 
   useEffect(() => {
     const fetchBtcPrice = async () => {
@@ -48,12 +48,12 @@ export default function ReceivePaymentScreen() {
         const data = await response.json();
         setBtcPrice(data.bitcoin.usd);
       } catch (error) {
-        console.error("Error fetching BTC price:", error);
+        console.error('Error fetching BTC price:', error);
       }
     };
 
     fetchBtcPrice();
-  }, []); 
+  }, []);
 
   const generateInvoice = () => {
     if (!amount || parseFloat(amount) <= 0) {
@@ -68,7 +68,7 @@ export default function ReceivePaymentScreen() {
       const calculatedUsd = btcValue * btcPrice;
       setUsdValue(calculatedUsd.toFixed(2));
     } else {
-      setUsdValue('...'); 
+      setUsdValue('...');
     }
     //mocado
     const mockInvoice = `lnbc${amount}000n1pj9x7ztpp5qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqsdqqcqzpgxqyz5vqsp5qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq9qyyssqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqxqq`;
@@ -134,7 +134,9 @@ export default function ReceivePaymentScreen() {
 
               <View style={styles.amountDisplayContainer}>
                 <Text style={styles.amountLabel}>Amount</Text>
-                <Text style={styles.amountDisplay}>{parseInt(amount).toLocaleString('en-US')} sats</Text>
+                <Text style={styles.amountDisplay}>
+                  {parseInt(amount).toLocaleString('en-US')} sats
+                </Text>
                 <Text style={styles.amountDisplaySubtitle}>≈ ${usdValue} USD</Text>
                 {memo ? (
                   <>
@@ -166,8 +168,8 @@ export default function ReceivePaymentScreen() {
               <View style={styles.infoCard}>
                 <MaterialCommunityIcons name="information" size={20} color={colors.primary} />
                 <Text style={styles.infoText}>
-                  This invoice expires in 24 hours. Payment can be received via the mesh network
-                  or Lightning Network.
+                  This invoice expires in 24 hours. Payment can be received via the mesh network or
+                  Lightning Network.
                 </Text>
               </View>
             </View>
@@ -273,9 +275,7 @@ export default function ReceivePaymentScreen() {
               <MaterialCommunityIcons name="shield-check" size={24} color={colors.primary} />
               <View style={styles.featureTextContainer}>
                 <Text style={styles.featureTitle}>Secure & Private</Text>
-                <Text style={styles.featureDescription}>
-                  End-to-end encrypted payments
-                </Text>
+                <Text style={styles.featureDescription}>End-to-end encrypted payments</Text>
               </View>
             </View>
 
@@ -508,7 +508,8 @@ const styles = StyleSheet.create({
     color: colors.background,
     fontSize: 32,
     fontWeight: 'bold',
-  },  amountDisplaySubtitle: {
+  },
+  amountDisplaySubtitle: {
     color: colors.primary,
     fontSize: 18,
     fontWeight: '600',

@@ -38,7 +38,7 @@ export default function SendOnlineScreen() {
         </View>
 
         <ScrollView contentContainerStyle={styles.container}>
-          <Text style={styles.label}>Lightning Network itens:</Text>
+          <Text style={styles.label}>Lightning Network items:</Text>
           <View style={styles.inputContainer}>
             <TextInput
               style={[styles.input, isFocused && { borderColor: colors.primary }]}
