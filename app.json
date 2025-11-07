@@ -33,12 +33,15 @@
       ]
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/icon.png"
     },
     "extra": {
       "eas": {
         "projectId": "6b01265e-a3d9-4871-9621-4ce4a174e810"
       }
-    }
+    },
+    "plugins": [
+      "expo-font"
+    ]
   }
 }

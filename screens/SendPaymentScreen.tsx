@@ -22,7 +22,7 @@ export default function SendPaymentScreen() {
   const [invoice, setInvoice] = useState('');
   const [isFocused, setIsFocused] = useState(false);
 
-  const decodedInvoice = invoice.length > 10 ? { amount: 1200, memo: 'Pagamento de teste' } : null;
+  const decodedInvoice = invoice.length > 10 ? { amount: 1200, memo: 'Test payment' } : null;
 
   return (
     <ImageBackground
@@ -35,12 +35,12 @@ export default function SendPaymentScreen() {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Feather name="chevron-left" size={28} color={colors.primary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Enviar Pagamento</Text>
+          <Text style={styles.headerTitle}>Send Payment</Text>
           <View style={{ width: 40 }} />
         </View>
 
         <ScrollView contentContainerStyle={styles.container}>
-          <Text style={styles.label}>Fatura Lightning</Text>
+          <Text style={styles.label}>Lightning Invoice</Text>
           <View style={styles.inputContainer}>
             <TextInput
               style={[styles.input, isFocused && { borderColor: colors.primary }]}
@@ -59,19 +59,19 @@ export default function SendPaymentScreen() {
           <View style={styles.auxButtonsContainer}>
             <TouchableOpacity style={styles.auxButton}>
               <Feather name="clipboard" size={20} color={colors.primary} />
-              <Text style={styles.auxButtonText}>Colar</Text>
+              <Text style={styles.auxButtonText}>Paste</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.auxButton}>
               <Feather name="camera" size={20} color={colors.primary} />
-              <Text style={styles.auxButtonText}>Escanear</Text>
+              <Text style={styles.auxButtonText}>Scan</Text>
             </TouchableOpacity>
           </View>
 
           {decodedInvoice && (
             <View style={styles.detailsCard}>
-              <Text style={styles.detailsTitle}>Detalhes do Pagamento</Text>
+              <Text style={styles.detailsTitle}>Payment Details</Text>
               <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Valor</Text>
+                <Text style={styles.detailLabel}>Amount</Text>
                 <Text style={styles.detailValue}>
                   {decodedInvoice.amount.toLocaleString()} sats
                 </Text>
@@ -90,7 +90,7 @@ export default function SendPaymentScreen() {
             disabled={!decodedInvoice}
             onPress={() => navigation.navigate('SendingStatus')}
           >
-            <Text style={styles.confirmButtonText}>Confirmar e Enviar via MESH</Text>
+            <Text style={styles.confirmButtonText}>Confirm and Send via MESH</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>
