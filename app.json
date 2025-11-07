@@ -25,12 +25,15 @@
       "package": "com.thelaw0606.meshlightning"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/icon.png"
     },
     "extra": {
       "eas": {
         "projectId": "8c934db6-c270-4bb6-9913-1c42f41259ea"
       }
-    }
+    },
+    "plugins": [
+      "expo-font"
+    ]
   }
 }

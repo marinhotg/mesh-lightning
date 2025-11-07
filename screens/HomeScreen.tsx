@@ -96,7 +96,7 @@ export default function HomeScreen() {
         <View style={styles.container}>
           <View style={styles.header}>
             <Image
-              source={require('../assets/MeshLightning.jpg')}
+              source={require('../assets/MeshLightning.png')}
               style={styles.logoImage}
               resizeMode="contain"
             />
@@ -144,19 +144,19 @@ const styles = StyleSheet.create({
   },
   mainContent: {
     flex: 1,
-    justifyContent: 'center',
-    marginBottom: 120,
-  },
+    justifyContent: 'flex-start',
+    paddingTop: 30, 
+    marginBottom: 120,  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20,
-    marginTop: 28,
+    marginBottom: 0,
+    marginTop: 15,
   },
   logoImage: {
     width: '100%',
-    height: 100,
+    height: 200,
   },
   balanceContainer: {
     alignItems: 'center',
