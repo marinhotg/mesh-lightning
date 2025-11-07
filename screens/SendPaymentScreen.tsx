@@ -5,10 +5,10 @@ import {
   StyleSheet,
   TextInput,
   TouchableOpacity,
-  SafeAreaView,
   ScrollView,
   ImageBackground,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../constants/Colors';
 import { Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
