@@ -14,15 +14,15 @@ export default function SendingStatusModal() {
     <View style={styles.container}>
       <ActivityIndicator size="large" color={colors.primary} />
 
-      <Text style={styles.title}>Enviando Pagamento...</Text>
+      <Text style={styles.title}>Sending Payment...</Text>
 
       <Text style={styles.subtitle}>
-        Sua transação está sendo enviada de forma segura pela rede mesh. Isso pode levar alguns
-        instantes.
+        Your transaction is being securely sent over the mesh network. This may take a few
+        moments.
       </Text>
 
       <TouchableOpacity style={styles.closeButton} onPress={() => navigation.navigate('Home')}>
-        <Text style={styles.closeButtonText}>Fechar</Text>
+        <Text style={styles.closeButtonText}>Close</Text>
       </TouchableOpacity>
     </View>
   );

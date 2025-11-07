@@ -33,16 +33,16 @@ export default function SendOnlineScreen() {
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Feather name="chevron-left" size={28} color={colors.primary} />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Enviar Online</Text>
+          <Text style={styles.headerTitle}>Send Online</Text>
           <View style={{ width: 40 }} />
         </View>
 
         <ScrollView contentContainerStyle={styles.container}>
-          <Text style={styles.label}>O que precisar!</Text>
+          <Text style={styles.label}>Lightning Network itens:</Text>
           <View style={styles.inputContainer}>
             <TextInput
               style={[styles.input, isFocused && { borderColor: colors.primary }]}
-              placeholder="fatura ou ID de nó..."
+              placeholder="invoice or node ID..."
               placeholderTextColor={colors.textSecondary}
               value={invoice}
               onChangeText={setInvoice}
@@ -61,7 +61,7 @@ export default function SendOnlineScreen() {
             disabled={!invoice}
             onPress={() => navigation.navigate('SendingStatus')}
           >
-            <Text style={styles.confirmButtonText}>Enviar via LDK</Text>
+            <Text style={styles.confirmButtonText}>Send via Lightning Network</Text>
           </TouchableOpacity>
         </View>
       </SafeAreaView>

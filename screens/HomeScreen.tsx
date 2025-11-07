@@ -34,11 +34,11 @@ export default function HomeScreen() {
     switch (displayStatus) {
       case 'bluetoothDisconnected':
         return (
-          <View style={[styles.statusCard, { backgroundColor: colors.accent }]}>
-            <MaterialCommunityIcons name="bluetooth-off" size={20} color={colors.warning} />
+          <View style={[styles.statusCard, { backgroundColor: "#b86e14" }]}>
+            <MaterialCommunityIcons name="bluetooth-off" size={20} color={"#ffff"} />
             <View style={styles.statusTextContainer}>
-              <Text style={styles.statusTitle}>STATUS: Bluetooth desconectado</Text>
-              <Text style={styles.statusSubtitle}>Conecte para iniciar a rede mesh.</Text>
+              <Text style={styles.statusTitle}>STATUS: Bluetooth disconnected</Text>
+              <Text style={styles.statusSubtitle}>Connect to start the mesh network.</Text>
             </View>
           </View>
         );
@@ -47,8 +47,8 @@ export default function HomeScreen() {
           <View style={[styles.statusCard, { backgroundColor: colors.accent }]}>
             <MaterialCommunityIcons name="bluetooth" size={20} color={colors.primary} />
             <View style={styles.statusTextContainer}>
-              <Text style={styles.statusTitle}>STATUS: Bluetooth conectado</Text>
-              <Text style={styles.statusSubtitle}>internet desconectada</Text>
+              <Text style={styles.statusTitle}>STATUS: Bluetooth connected</Text>
+              <Text style={styles.statusSubtitle}>Internet disconnected</Text>
             </View>
           </View>
         );
@@ -57,8 +57,8 @@ export default function HomeScreen() {
           <View style={[styles.statusCard, { backgroundColor: colors.success }]}>
             <Feather name="globe" size={20} color={colors.background} />
             <View style={styles.statusTextContainer}>
-              <Text style={styles.statusTitle}>STATUS: Internet conectada</Text>
-              <Text style={styles.statusSubtitle}>Conectado a internet: roteando transações</Text>
+              <Text style={styles.statusTitle}>STATUS: Internet connected</Text>
+              <Text style={styles.statusSubtitle}>Connected to the internet: routing transactions</Text>
             </View>
           </View>
         );
@@ -73,7 +73,7 @@ export default function HomeScreen() {
           onPress={() => setDisplayStatus('internetDisconnected')}
         >
           <MaterialCommunityIcons name="bluetooth" size={20} color={colors.background} />
-          <Text style={styles.actionButtonText}>Conectar Bluetooth</Text>
+          <Text style={styles.actionButtonText}>Connect Bluetooth</Text>
         </TouchableOpacity>
       );
     }
@@ -81,7 +81,7 @@ export default function HomeScreen() {
     return (
       <TouchableOpacity style={styles.singleActionButton} onPress={handleSendPress}>
         <Feather name="arrow-up-right" size={20} color={colors.background} />
-        <Text style={styles.actionButtonText}>ENVIAR</Text>
+        <Text style={styles.actionButtonText}>SEND</Text>
       </TouchableOpacity>
     );
   };
@@ -102,11 +102,10 @@ export default function HomeScreen() {
             />
           </View>
 
-          {/* Wrapper para centralizar o conteúdo principal */}
           <View style={styles.mainContent}>
             <View style={styles.balanceContainer}>
-              <Text style={styles.balanceTitle}>Saldo Disponível</Text>
-              <Text style={styles.balanceAmount}>18.000 sats</Text>
+              <Text style={styles.balanceTitle}>Available Balance</Text>
+              <Text style={styles.balanceAmount}>18,000 sats</Text>
             </View>
 
             {renderNetworkStatusCard()}
@@ -131,16 +130,13 @@ export default function HomeScreen() {
   );
 }
 
-// Estilos atualizados
 const styles = StyleSheet.create({
-  // 3. Novo estilo para o background
   background: {
     flex: 1,
   },
-  // 4. Estilo safeArea agora é transparente
   safeArea: {
     flex: 1,
-    backgroundColor: 'transparent', // Remover o fundo sólido
+    backgroundColor: 'transparent', 
   },
   container: {
     flex: 1,
