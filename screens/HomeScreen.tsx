@@ -1,29 +1,42 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  SafeAreaView,
-  Image,
-  ImageBackground,
-} from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, ImageBackground } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../constants/Colors';
 import { Feather, MaterialCommunityIcons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
+import { useNetworkState } from '../hooks/useNetworkState';
+import { useBluetoothState } from '../hooks/useBluetoothState';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
-type DisplayStatus = 'bluetoothDisconnected' | 'internetDisconnected' | 'internetConnected';
+type DisplayStatus =
+  | 'bluetoothDisconnected'
+  | 'internetDisconnected'
+  | 'internetConnected'
+  | 'bothConnected';
 
 export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
+  const { isInternetConnected } = useNetworkState();
+  const { isBluetoothConnected, toggleBluetooth } = useBluetoothState();
   const [displayStatus, setDisplayStatus] = useState<DisplayStatus>('bluetoothDisconnected');
 
+  useEffect(() => {
+    if (isInternetConnected && isBluetoothConnected) {
+      setDisplayStatus('bothConnected');
+    } else if (isInternetConnected) {
+      setDisplayStatus('internetConnected');
+    } else if (isBluetoothConnected) {
+      setDisplayStatus('internetDisconnected');
+    } else {
+      setDisplayStatus('bluetoothDisconnected');
+    }
+  }, [isInternetConnected, isBluetoothConnected]);
+
   const handleSendPress = () => {
-    if (displayStatus === 'internetConnected') {
+    if (displayStatus === 'internetConnected' || displayStatus === 'bothConnected') {
       navigation.navigate('SendOnline');
     } else {
       navigation.navigate('SendPayment');
@@ -62,16 +75,28 @@ export default function HomeScreen() {
             </View>
           </View>
         );
+      case 'bothConnected':
+        return (
+          <View style={[styles.statusCard, { backgroundColor: colors.success }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <MaterialCommunityIcons name="bluetooth" size={18} color={colors.background} />
+              <Feather name="globe" size={18} color={colors.background} style={{ marginLeft: 5 }} />
+            </View>
+            <View style={styles.statusTextContainer}>
+              <Text style={styles.statusTitle}>STATUS: Internet + Bluetooth</Text>
+              <Text style={styles.statusSubtitle}>
+                Bluetooth: {isBluetoothConnected ? 'ON' : 'OFF'} | Roteando transações
+              </Text>
+            </View>
+          </View>
+        );
     }
   };
 
   const renderActionButton = () => {
     if (displayStatus === 'bluetoothDisconnected') {
       return (
-        <TouchableOpacity
-          style={styles.singleActionButton}
-          onPress={() => setDisplayStatus('internetDisconnected')}
-        >
+        <TouchableOpacity style={styles.singleActionButton} onPress={toggleBluetooth}>
           <MaterialCommunityIcons name="bluetooth" size={20} color={colors.background} />
           <Text style={styles.actionButtonText}>Connect Bluetooth</Text>
         </TouchableOpacity>
@@ -111,18 +136,6 @@ export default function HomeScreen() {
             {renderNetworkStatusCard()}
 
             {renderActionButton()}
-
-            <View style={styles.debugButtons}>
-              <TouchableOpacity onPress={() => setDisplayStatus('bluetoothDisconnected')}>
-                <Text style={styles.debugTextWarning}>Offline BT Off</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => setDisplayStatus('internetDisconnected')}>
-                <Text style={styles.debugTextPrimary}>Offline BT On</Text>
-              </TouchableOpacity>
-              <TouchableOpacity onPress={() => setDisplayStatus('internetConnected')}>
-                <Text style={styles.debugTextSuccess}>Online</Text>
-              </TouchableOpacity>
-            </View>
           </View>
         </View>
       </SafeAreaView>
@@ -189,23 +202,6 @@ const styles = StyleSheet.create({
   statusSubtitle: {
     color: colors.textSecondary,
     fontSize: 14,
-  },
-  debugButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginTop: 30,
-  },
-  debugTextWarning: {
-    color: colors.warning,
-    fontSize: 12,
-  },
-  debugTextPrimary: {
-    color: colors.primary,
-    fontSize: 12,
-  },
-  debugTextSuccess: {
-    color: colors.success,
-    fontSize: 12,
   },
   singleActionButton: {
     flexDirection: 'row',
