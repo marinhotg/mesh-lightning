@@ -16,6 +16,8 @@ import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/AppNavigator';
 import { useNetworkState } from '../hooks/useNetworkState';
 import { useBluetoothState } from '../hooks/useBluetoothState';
+import { useAppStore } from '../src/store/appStore';
+import LDKInitScreen from './LDKInitScreen';
 import * as Haptics from 'expo-haptics';
 
 type HomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
@@ -32,11 +34,14 @@ export default function HomeScreen() {
   const navigation = useNavigation<HomeScreenNavigationProp>();
   const { isInternetConnected } = useNetworkState();
   const { isBluetoothConnected, toggleBluetooth } = useBluetoothState();
+  const { balance, ldkNodeStarted, ldkNodeInfo, ldkBalance, updateLDKBalance } = useAppStore();
   const [displayStatus, setDisplayStatus] = useState<DisplayStatus>('bluetoothDisconnected');
+  const [showLDKInit, setShowLDKInit] = useState(!ldkNodeStarted);
 
-  const [satsBalance, setSatsBalance] = useState(18000);
   const [btcPrice, setBtcPrice] = useState<number | null>(null);
   const [usdBalance, setUsdBalance] = useState<string>('...');
+
+  const satsBalance = (ldkBalance?.totalOnchain || 18000) + balance;
 
   const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
@@ -60,7 +65,7 @@ export default function HomeScreen() {
         const data = await response.json();
         setBtcPrice(data.bitcoin.usd);
       } catch (error) {
-        console.error('Error fetching BTC price:', error);
+        // Silenced for offline mock
         setUsdBalance('Error');
       }
     };
@@ -75,6 +80,22 @@ export default function HomeScreen() {
       setUsdBalance(calculatedUsd.toFixed(2));
     }
   }, [btcPrice, satsBalance]);
+
+  useEffect(() => {
+    setShowLDKInit(!ldkNodeStarted);
+  }, [ldkNodeStarted]);
+
+  useEffect(() => {
+    if (ldkNodeStarted) {
+      updateLDKBalance();
+      // Update balance periodically
+      const interval = setInterval(() => {
+        updateLDKBalance();
+      }, 30000); // Update every 30 seconds
+
+      return () => clearInterval(interval);
+    }
+  }, [ldkNodeStarted, updateLDKBalance]);
 
   useEffect(() => {
     if (isInternetConnected && isBluetoothConnected) {
@@ -204,6 +225,14 @@ export default function HomeScreen() {
     );
   };
 
+  const handleLDKInitialized = () => {
+    setShowLDKInit(false);
+  };
+
+  if (showLDKInit) {
+    return <LDKInitScreen onInitialized={handleLDKInitialized} />;
+  }
+
   return (
     <ImageBackground
       source={require('../assets/estrela.jpg')}
@@ -235,6 +264,25 @@ export default function HomeScreen() {
             </Animated.View>
 
             {renderNetworkStatusCard()}
+
+            {ldkNodeStarted && ldkNodeInfo && (
+              <Animated.View style={[styles.ldkInfoCard, { opacity: fadeAnim }]}>
+                <View style={styles.ldkInfoHeader}>
+                  <MaterialCommunityIcons name="lightning-bolt" size={20} color={colors.primary} />
+                  <Text style={styles.ldkInfoTitle}>Lightning Node</Text>
+                  <Text style={styles.ldkInfoStatus}>ONLINE</Text>
+                </View>
+                <Text style={styles.ldkNodeId}>
+                  Node ID: {ldkNodeInfo.nodeId.substring(0, 20)}...
+                </Text>
+                {ldkBalance && (
+                  <View style={styles.ldkBalanceRow}>
+                    <Text style={styles.ldkBalanceLabel}>On-chain: {ldkBalance.totalOnchain} sats</Text>
+                    <Text style={styles.ldkBalanceLabel}>Lightning: {Math.round(ldkBalance.totalLightning)} sats</Text>
+                  </View>
+                )}
+              </Animated.View>
+            )}
 
             {/* <Animated.View 
               style={[
@@ -441,5 +489,49 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 8,
     letterSpacing: 0.5,
+  },
+  ldkInfoCard: {
+    backgroundColor: 'rgba(57, 122, 138, 0.15)',
+    borderRadius: 15,
+    padding: 15,
+    marginVertical: 15,
+    borderWidth: 1,
+    borderColor: colors.primary,
+  },
+  ldkInfoHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  ldkInfoTitle: {
+    color: colors.text,
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 8,
+    flex: 1,
+  },
+  ldkInfoStatus: {
+    color: '#10B981',
+    fontSize: 12,
+    fontWeight: 'bold',
+    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  ldkNodeId: {
+    color: colors.textSecondary,
+    fontSize: 12,
+    fontFamily: 'monospace',
+    marginBottom: 8,
+  },
+  ldkBalanceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  ldkBalanceLabel: {
+    color: colors.text,
+    fontSize: 13,
+    fontWeight: '600',
   },
 });

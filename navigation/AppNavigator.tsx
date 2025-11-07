@@ -15,7 +15,7 @@ export type RootStackParamList = {
   SendPayment: undefined;
   SendOnline: undefined;
   ReceivePayment: undefined;
-  SendingStatus: undefined;
+  SendingStatus: { transactionId?: string } | undefined;
   Peers: undefined;
 };
 
